@@ -22,7 +22,7 @@ class Presenter:
         self.view.main_loop()
 
     def display_data(self):
-        processed_data = self.model.process_dat()
+        processed_data = self.model.process_data()
         self.view.display_data(processed_data)
 
     def new_input(self):
@@ -40,8 +40,8 @@ def start_application():
     # Instantiate Model and Presenter
     repository = ListDataSource(10)
     model = Model(repository)
-    #view = ConsoleView()
-    view = QtView()
+    view = ConsoleView()
+    #view = QtView()
     presenter = Presenter(model, view)
 
 
