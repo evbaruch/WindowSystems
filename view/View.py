@@ -8,10 +8,6 @@ class View(ABC):
         self.end = Event.end_program_Event()
 
     @abstractmethod
-    def main_loop(self):
-        pass
-
-    @abstractmethod
     def display_data(self, data):
         pass
 
@@ -25,6 +21,10 @@ class View(ABC):
 
     @abstractmethod
     def end_program(self, message):
+        pass
+    
+    @abstractmethod
+    def startView(self):
         pass
 
 

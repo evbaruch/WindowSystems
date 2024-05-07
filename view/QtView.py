@@ -1,4 +1,8 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QDateEdit ,QListWidget, QScrollArea ,QHBoxLayout
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
+
+from qt_material import apply_stylesheet
 from view.View import View
 from view import Event
 
@@ -11,32 +15,129 @@ class QtView(View):
 
         # Create main window
         self.window = QMainWindow()
-        self.window.setWindowTitle("Qt View Example")
-
-        # Create central widget and layout
+        
+        # set the window title
+        self.window.setWindowTitle("Qt View")
+        
+        # set window size
+        self.window.resize(1000, 600)
+        
+        # Create a central widget for the main window
         self.central_widget = QWidget()
-        self.layout = QVBoxLayout(self.central_widget)
-
-        # Add components to layout
-        self.label = QLabel("Enter your input:")
-        self.layout.addWidget(self.label)
-
-        self.input_line_edit = QLineEdit()
-        self.layout.addWidget(self.input_line_edit)
-
-        self.submit_button = QPushButton("Submit")
-        self.submit_button.clicked.connect(self.handle_submit)
-        self.layout.addWidget(self.submit_button)
-
-        self.display_label = QLabel()
-        self.layout.addWidget(self.display_label)
-
-        # Set central widget
         self.window.setCentralWidget(self.central_widget)
 
-    def main_loop(self):
-        self.window.show()
-        self.app.exec_()
+        self.layout = QVBoxLayout(self.central_widget)
+
+        # Create a tab widget
+        self.tab_widget = QTabWidget(self.central_widget)
+        self.tab_widget.currentChanged.connect(self.tab_changed)
+        self.layout.addWidget(self.tab_widget)
+
+        # First tab
+        self.first_tab = QWidget()
+        self.first_layout = QFormLayout(self.first_tab)
+
+        self.address_label = QLabel("Enter Address:")
+        self.address_line_edit = QLineEdit(self.first_tab)
+        self.address_line_edit.setStyleSheet("color: white;")
+        self.first_layout.addRow(self.address_label, self.address_line_edit)
+
+        self.date_label = QLabel("Enter Date:")
+        self.date_line_edit = QDateEdit(self.first_tab)
+        self.date_line_edit.setStyleSheet("color: white;")
+        self.date_line_edit.setCalendarPopup(True)  # Enable the calendar popup
+        self.first_layout.addRow(self.date_label, self.date_line_edit)
+
+        self.submit_button = QPushButton("Submit", self.first_tab)
+        self.submit_button.clicked.connect(self.handle_submit_first_tab)
+        self.submit_button.setEnabled(False)  # Disable the button initially
+        self.first_layout.addRow(self.submit_button)
+
+        self.tab_widget.addTab(self.first_tab, "Address and Date")
+
+        # Second tab
+        self.second_tab = QWidget()
+        self.second_layout = QHBoxLayout(self.second_tab)  # Change to QHBoxLayout
+
+        self.splitter = QSplitter(Qt.Orientation.Horizontal, self.second_tab)  # Change to Horizontal
+        self.second_layout.addWidget(self.splitter)
+
+        # Left widget with image holder
+        self.left_widget = QWidget(self.second_tab)
+        self.left_layout = QVBoxLayout(self.left_widget)
+        self.left_layout.setAlignment(Qt.AlignCenter)  # Align the layout to the center
+
+        self.image_label = QLabel(self.left_widget)
+        pixmap = QPixmap("./map.png")
+        self.image_label.setPixmap(pixmap)
+
+        # Set a fixed size for the image label
+        self.image_label.setFixedSize(pixmap.width(), pixmap.height())
+
+        self.image_label.setScaledContents(True)  # Add this line
+        self.image_label.setAlignment(Qt.AlignCenter)  # Align the image label to the center
+        self.left_layout.addWidget(self.image_label)
+
+        self.splitter.addWidget(self.left_widget)
+
+        # Right widget with text presenter, text input, and send button
+        self.right_widget = QWidget(self.second_tab)
+        self.right_layout = QVBoxLayout(self.right_widget)
+
+        self.input_label = QLabel("Input:", self.right_widget)  # Rename the header for the input
+        self.right_layout.addWidget(self.input_label)
+
+        self.input_line_edit = QLineEdit(self.right_widget)
+        self.input_line_edit.setStyleSheet("color: white;")
+        self.right_layout.addWidget(self.input_line_edit)
+
+        self.send_button = QPushButton("Send", self.right_widget)
+        self.send_button.clicked.connect(self.handle_submit_second_tab)
+        self.right_layout.addWidget(self.send_button)
+
+        # Create a scroll area for the display label
+        self.scroll_area = QScrollArea(self.right_widget)
+        self.scroll_area.setWidgetResizable(True)  # Allow the widget to resize
+
+        # Create a widget for the scroll area
+        self.scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_widget)
+
+        self.display_label = QLabel(self.scroll_widget)  # Define the display_label here
+        self.scroll_layout.addWidget(self.display_label)
+
+        # Set the scroll widget as the widget for the scroll area
+        self.scroll_area.setWidget(self.scroll_widget)
+
+        self.right_layout.addWidget(self.scroll_area)  # Add the scroll area to the layout right after the send button
+
+        self.splitter.addWidget(self.right_widget)
+
+        # Set the stretch factors of the widgets in the splitter
+        self.splitter.setStretchFactor(0, 0)  # Set the stretch factor of the left widget to 0
+        self.splitter.setStretchFactor(1, 1)  # Set the stretch factor of the right widget to 1
+
+        # Make the splitter handle not movable
+        self.splitter.setHandleWidth(0)
+
+        self.tab_widget.addTab(self.second_tab, "Map and Response")
+        # Third tab (history of requests)
+        self.third_tab = QWidget()
+        self.third_layout = QVBoxLayout(self.third_tab)
+
+        self.history_label = QLabel("History of Requests:", self.third_tab)
+        self.third_layout.addWidget(self.history_label)
+
+        self.history_list_widget = QListWidget(self.third_tab)
+        self.third_layout.addWidget(self.history_list_widget)
+
+        self.tab_widget.addTab(self.third_tab, "History")
+        
+        # Apply a theme to the application
+        apply_stylesheet(self.app, theme='dark_blue.xml')
+
+        # Add a flag to track whether the submit button has been clicked
+        self.submit_clicked = False
 
     def display_data(self, data):
         self.display_label.setText("Displaying Data:\n" + "\n".join(data))
@@ -51,9 +152,32 @@ class QtView(View):
         self.show_message(message)
         self.window.close()
 
-    def handle_submit(self):
+    def handle_submit_first_tab(self):
+        self.submit_clicked = True  # Set the flag to True when the submit button is clicked
+        self.tab_widget.setCurrentIndex(1)  # Move to the second tab
+        self.input.fire()
+        self.display.fire()
+        
+
+    def handle_submit_second_tab(self):
         self.input.fire()
         self.display.fire()
         if self.input_line_edit.text() == "end":
             self.end.fire("Thank you")
 
+    def tab_changed(self, index):
+        if not hasattr(self, 'submit_clicked'):
+            self.submit_clicked = False
+
+        
+        if index == 2:  # If the current tab is the "History" tab
+            return  # Do nothing and allow the user to access the tab
+        elif not self.submit_clicked and index != 0:
+            self.tab_widget.setCurrentIndex(0)  # Force stay on the first tab
+        elif self.submit_clicked and not (self.address_line_edit.text() and self.date_line_edit.date().isValid()):
+            self.submit_clicked = False  # Reset the flag when moving back to the first tab
+            self.tab_widget.setCurrentIndex(0)  # Force stay on the first tab
+                 
+    def startView(self):
+        self.window.show()
+        self.app.exec_()

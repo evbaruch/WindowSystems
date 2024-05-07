@@ -1,5 +1,6 @@
 from model.DataSource import DataSource
 import copy
+import requests
 
 class Model:
     def __init__(self, repository: DataSource):
@@ -31,3 +32,19 @@ class Model:
 
     def delete_item(self, index):
         return self.repository.delete(index)
+    
+    def validate_address(self, address):
+        url = "https://localhost:7216/api/Data/IsALocation"
+        params = {"address": address}
+        response = requests.get(url, params=params)
+
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+        
+    def get_data(self):
+        return self.repository.read()
+        # send request to controller to get data
+        
+    

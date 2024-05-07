@@ -14,12 +14,17 @@ class Presenter:
     def __init__(self, model, view):
         self.model = model
         self.view = view
+        
+        # Connect view signals to presenter methods
+        self.view.submit_button.clicked.connect(self.handle_submit)
+        self.view.input_line_edit.textChanged.connect(self.check_address)
 
-    def sart_main_loop(self):
+
+    def show(self):
         self.view.input.add_handler(self.new_input)
         self.view.display.add_handler(self.display_data)
         self.view.end.add_handler(self.end_program)
-        self.view.main_loop()
+        self.view.startView()
 
     def display_data(self):
         processed_data = self.model.process_data()
@@ -32,6 +37,16 @@ class Presenter:
     def end_program(self, message):
         self.view.show_message(message)
         self.view.end_program(message)
+        
+    def check_address(self, address):
+        is_valid = self.model.validate_address(address)
+        self.view.submit_button.setEnabled(is_valid)
+        
+    def handle_submit(self):
+        data = self.model.get_data()
+        self.view.display_data(data)
+
+
 
 
 
@@ -40,12 +55,12 @@ def start_application():
     # Instantiate Model and Presenter
     repository = ListDataSource(10)
     model = Model(repository)
-    view = ConsoleView()
-    #view = QtView()
+    #view = ConsoleView()
+    view = QtView()
     presenter = Presenter(model, view)
 
 
-    presenter.sart_main_loop()
+    presenter.show()
 
     #presenter.handle_user_input()
     #presenter.process_and_display_data()

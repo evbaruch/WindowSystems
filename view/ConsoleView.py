@@ -2,7 +2,7 @@ from view.View import View
 
 class ConsoleView(View):
 
-    def main_loop(self):
+    def startView(self):
         print("Starting Main Loop")
         while True:
             self.input.fire()
