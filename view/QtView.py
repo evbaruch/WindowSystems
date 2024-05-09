@@ -1,15 +1,86 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QDateEdit ,QListWidget, QScrollArea ,QHBoxLayout
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QDateEdit, QScrollArea ,QHBoxLayout,QMessageBox , QGridLayout ,QSlider
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent 
+import json
+import requests
 
 from qt_material import apply_stylesheet
 from view.View import View
-from view import Event
+#from view import Event
+from view.Event import Event
+
+class ClickableWidget(QWidget):
+    def __init__(self, image_path, address):
+        super().__init__()
+
+        self.setAttribute(Qt.WA_Hover, True)
+        self.layout = QVBoxLayout(self)
+        pixmap = QPixmap()
+        self.image_label = QLabel(self)
+        pixmap.loadFromData(requests.get(image_path).content)
+        self.image_label.setPixmap(pixmap.scaled(143, 143, Qt.KeepAspectRatio))
+        self.image_label.setStyleSheet("""
+            border: 10px solid black;
+            border-radius: 20px;
+        """)  # Add a rounded border around the image
+        self.layout.addWidget(self.image_label)
+
+        self.address_label = QLabel(address, self)
+        self.layout.addWidget(self.address_label)
+
+        # Apply CSS styles for normal state
+        self.setStyleSheet("""
+            background-color: #262a2e;
+            color: white;
+        """)
+
+        # Install event filter
+        self.installEventFilter(self)
+
+    # def eventFilter(self, obj, event):
+    #     # Change the style when a hover event is detected
+    #     if event.type() == QEvent.HoverEnter:
+    #         self.setStyleSheet("""
+    #             background-color: #448aff;
+    #         """)
+    #     elif event.type() == QEvent.HoverLeave:
+    #         self.setStyleSheet("""
+    #             background-color: #2E2E2E;
+    #         """)
+    #     return super().eventFilter(obj, event)
+    
+    def eventFilter(self, obj, event):
+        # Change the style when a hover event is detected
+        if event.type() == QEvent.HoverEnter:
+            self.setStyleSheet("""
+                background-color: #262a2e;
+            """)
+            self.address_label.setStyleSheet("""
+                color: #448aff;
+                text-decoration: underline;
+            """)
+        elif event.type() == QEvent.HoverLeave:
+            self.setStyleSheet("""
+                background-color: #262a2e;
+            """)
+            self.address_label.setStyleSheet("""
+                color: white;
+                text-decoration: none;
+            """)
+        return super().eventFilter(obj, event)
+
+    def mousePressEvent(self, event):
+        QMessageBox.information(self, "Clicked", "You clicked on " + self.address_label.text())
+        # Change the style when clicked
+        self.setStyleSheet("""
+            background-color: gray;
+        """)
 
 class QtView(View):
     def __init__(self):
         super().__init__()
-
+        
         # Initialize Qt application
         self.app = QApplication([])
 
@@ -22,6 +93,9 @@ class QtView(View):
         # set window size
         self.window.resize(1000, 600)
         
+        # Initialize addresses as an empty JSON array
+        self.history = json.loads('[]')  # Initialize as an empty JSON array
+        
         # Create a central widget for the main window
         self.central_widget = QWidget()
         self.window.setCentralWidget(self.central_widget)
@@ -32,29 +106,42 @@ class QtView(View):
         self.tab_widget = QTabWidget(self.central_widget)
         self.tab_widget.currentChanged.connect(self.tab_changed)
         self.layout.addWidget(self.tab_widget)
-
         # First tab
         self.first_tab = QWidget()
         self.first_layout = QFormLayout(self.first_tab)
 
         self.address_label = QLabel("Enter Address:")
+        self.isAddressValid = False
         self.address_line_edit = QLineEdit(self.first_tab)
         self.address_line_edit.setStyleSheet("color: white;")
         self.first_layout.addRow(self.address_label, self.address_line_edit)
 
-        self.date_label = QLabel("Enter Date:")
-        self.date_line_edit = QDateEdit(self.first_tab)
-        self.date_line_edit.setStyleSheet("color: white;")
-        self.date_line_edit.setCalendarPopup(True)  # Enable the calendar popup
-        self.first_layout.addRow(self.date_label, self.date_line_edit)
+        self.zoom_label = QLabel("Enter Zoom Level:")
+        self.zoom_slider = QSlider(Qt.Horizontal, self.first_tab)
+        self.zoom_slider.setStyleSheet("color: white;")
+        self.zoom_slider.setMinimum(1)  # Set the minimum value
+        self.zoom_slider.setMaximum(20)  # Set the maximum value
+        self.zoom_value_label = QLabel()  # Create a label to display the slider's value
+        self.zoom_slider.valueChanged.connect(lambda: self.zoom_value_label.setText(str(self.zoom_slider.value())))  # Update the label's text when the slider's value changes
+
+        zoom_layout = QHBoxLayout()  # Create a horizontal layout
+        zoom_layout.addWidget(self.zoom_slider)  # Add the slider to the layout
+        zoom_layout.addWidget(self.zoom_value_label)  # Add the value label to the layout
+
+        self.first_layout.addRow(self.zoom_label, zoom_layout)  # Add the label and the layout (containing the slider and the value label) to the row
 
         self.submit_button = QPushButton("Submit", self.first_tab)
         self.submit_button.clicked.connect(self.handle_submit_first_tab)
-        self.submit_button.setEnabled(False)  # Disable the button initially
+        self.submit_button.setEnabled(True) 
         self.first_layout.addRow(self.submit_button)
-
+        
+        #the hidden message will be hidden and when shown the text will be error's red
+        self.hidden_message = QLabel("")
+        self.hidden_message.setStyleSheet("color: red;")
+        self.first_layout.addRow(self.hidden_message)
+        
         self.tab_widget.addTab(self.first_tab, "Address and Date")
-
+        self.input
         # Second tab
         self.second_tab = QWidget()
         self.second_layout = QHBoxLayout(self.second_tab)  # Change to QHBoxLayout
@@ -68,11 +155,7 @@ class QtView(View):
         self.left_layout.setAlignment(Qt.AlignCenter)  # Align the layout to the center
 
         self.image_label = QLabel(self.left_widget)
-        pixmap = QPixmap("./map.png")
-        self.image_label.setPixmap(pixmap)
-
-        # Set a fixed size for the image label
-        self.image_label.setFixedSize(pixmap.width(), pixmap.height())
+        self.pixmap = QPixmap()
 
         self.image_label.setScaledContents(True)  # Add this line
         self.image_label.setAlignment(Qt.AlignCenter)  # Align the image label to the center
@@ -121,15 +204,13 @@ class QtView(View):
         self.splitter.setHandleWidth(0)
 
         self.tab_widget.addTab(self.second_tab, "Map and Response")
+
         # Third tab (history of requests)
         self.third_tab = QWidget()
         self.third_layout = QVBoxLayout(self.third_tab)
 
         self.history_label = QLabel("History of Requests:", self.third_tab)
         self.third_layout.addWidget(self.history_label)
-
-        self.history_list_widget = QListWidget(self.third_tab)
-        self.third_layout.addWidget(self.history_list_widget)
 
         self.tab_widget.addTab(self.third_tab, "History")
         
@@ -140,7 +221,12 @@ class QtView(View):
         self.submit_clicked = False
 
     def display_data(self, data):
-        self.display_label.setText("Displaying Data:\n" + "\n".join(data))
+        self.display_label.setText(data.get("response"))  # Replace with the key for the response in your JSON object
+        url = data.get("id")
+        self.image_label.setPixmap(self.pixmap.loadFromData(requests.get(url)).content)  # Replace with the key for the image in your JSON object
+        # Set a fixed size for the image label
+        self.image_label.setFixedSize(self.image_label.pixmap().width(), self.image_label.pixmap().height())
+        
 
     def get_user_input(self):
         return self.input_line_edit.text()
@@ -153,17 +239,23 @@ class QtView(View):
         self.window.close()
 
     def handle_submit_first_tab(self):
-        self.submit_clicked = True  # Set the flag to True when the submit button is clicked
-        self.tab_widget.setCurrentIndex(1)  # Move to the second tab
-        self.input.fire()
-        self.display.fire()
-        
-
+        if(self.isAddressValid):
+            self.submit_clicked = True  # Set the flag to True when the submit button is clicked
+            self.tab_widget.setCurrentIndex(1)  # Move to the second tab
+            self.input.fire()
+            self.display.fire()
+    
     def handle_submit_second_tab(self):
         self.input.fire()
         self.display.fire()
-        if self.input_line_edit.text() == "end":
-            self.end.fire("Thank you")
+    
+    """
+            Display a message box with the given message.
+    """ 
+    def show_message(self, message):
+        msgBox = QMessageBox()
+        msgBox.setText(message)
+        msgBox.exec()
 
     def tab_changed(self, index):
         if not hasattr(self, 'submit_clicked'):
@@ -174,10 +266,27 @@ class QtView(View):
             return  # Do nothing and allow the user to access the tab
         elif not self.submit_clicked and index != 0:
             self.tab_widget.setCurrentIndex(0)  # Force stay on the first tab
-        elif self.submit_clicked and not (self.address_line_edit.text() and self.date_line_edit.date().isValid()):
+        elif self.submit_clicked and not (self.address_line_edit):
             self.submit_clicked = False  # Reset the flag when moving back to the first tab
             self.tab_widget.setCurrentIndex(0)  # Force stay on the first tab
                  
+    def history_init(self):
+            self.scroll_area = QScrollArea(self.third_tab)
+            # give the Scroll Area a different color
+            self.scroll_area.setStyleSheet("background-color: #262a2e;")
+            self.scroll_widget = QWidget()
+            self.history_list_widget = QGridLayout(self.scroll_widget)
+
+            for i, address in enumerate(self.history):
+                widget = ClickableWidget(address.get("path"), address.get("address"))
+                row = i // 7  # change the number to set number of rows
+                column = i % 5  # change the number to set number of columns
+                self.history_list_widget.addWidget(widget, row, column)
+
+            self.scroll_area.setWidget(self.scroll_widget)
+            self.third_layout.addWidget(self.scroll_area)       
+    
     def startView(self):
+        self.history_init()
         self.window.show()
         self.app.exec_()

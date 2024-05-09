@@ -6,6 +6,7 @@ class View(ABC):
         self.input = Event.new_data_Event()
         self.display = Event.display_data_Event()
         self.end = Event.end_program_Event()
+        
 
     @abstractmethod
     def display_data(self, data):
