@@ -18,39 +18,22 @@ class Presenter:
         
         
         # Connect view signals to presenter methods
-        # self.view.history_created_event.add_handler(self.get_all_items)
-        # self.view.address_line_edit.textChanged.connect(self.check_address) # the user types in the input line edit - the address is validated or not
         self.view.submit_button.clicked.connect(self.handle_submit) # the user clicks the submit button - a request is sent to the model to get the data
-        # self.view.send_button.clicked.connect(self.handle_send) # the user clicks the send button - a request is sent to the model to send the message
+        self.view.send_button.clicked.connect(self.handle_send) # the user clicks the send button - a request is sent to the model to send the message
         # self.view.delete_button.clicked.connect(self.handle_delete) # the user clicks the delete button - a request is sent to the model to delete the item
         
     def show(self):
-        # self.get_all_items()
-        # self.view.input.add_handler(self.new_input)
-        # self.view.display.add_handler(self.display_data)
+        self.get_all_items()
         self.view.end.add_handler(self.end_program)
         self.view.startView()
 
-    # """
-    #     requests chat
-    # """
-    # def display_data(self):
-    #     processed_data = self.model.getResponse(id ,prompt)
-    #     self.view.display_data(processed_data)
-
-    # """
-    # ?
-    # """
-    # def new_input(self):
-    #     input = self.view.get_user_input()
-    #     self.model.getResponse(id ,prompt)
 
     def end_program(self , message):
         self.view.show_message(message)
         self.view.end_program(message)
         
     """
-    requests validation of the address
+        requests validation of the address
     """
     def check_address(self,address):
         is_valid = self.model.validateAddress(address)
@@ -66,16 +49,19 @@ class Presenter:
             data = self.model.getData(address,zoom)
             self.view.display_data(data)
         else:
-            self.hidden_message("Invalid address.")
+            self.view.hidden_message.setText("Invalid address")
+            
         
-    # """
-    #     requests chat
-    # """    
-    # def handle_send(self):
-    #     prompt = self.view.get_user_input() # TODO: get prompt from qtview
-    #     id = self.view.get_id() # TODO: get id from qtview
-    #     response = self.model.getResponse(id , prompt)
-    #     self.view.display_data(response)
+    """
+        requests chat
+    """    
+    def handle_send(self):
+        prompt = self.view.prompt_line.text()
+        id = self.view.current_data.get("id")
+        responde = self.model.getResponse(id , prompt)
+        self.view.display_label.setText(responde.get("responde"))
+        self.view.current_data.update(responde)  # Append the response to the data
+        self.view.add_history(self.view.current_data) # Add the data to the history
         
     # """
     #     requests deletion of the item
@@ -88,11 +74,11 @@ class Presenter:
     #     else:
     #         self.view.show_message("Item not found.")
     
-    # """
-    #     requests all items
-    # """
-    # def get_all_items(self):
-    #     self.view.history = self.model.getAllItems()
+    """
+        requests all items
+    """
+    def get_all_items(self):
+        self.view.history = self.model.getAllItems()
         
     
 
@@ -109,6 +95,3 @@ def start_application():
     presenter = Presenter(model, view)
 
     presenter.show()
-
-    #presenter.handle_user_input()
-    #presenter.process_and_display_data()

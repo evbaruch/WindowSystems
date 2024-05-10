@@ -33,16 +33,16 @@ class Model:
     def getResponse(self, id, prompt):
         url = "https://localhost:7216/api/Data/GetResponse"
         params = {"id_map": id, "Prompt": prompt}
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, verify=False)
         return response.json()
 
     def delete(self, id_map):
         url = "https://localhost:7216/api/Data/Delete"
         params = {"id_map": id_map}
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, verify=False)
         return response.status_code == 200
 
-    # def getAllItems(self):        
-    #     url = "https://localhost:7216/api/Data/GetAllItems"
-    #     response = requests.get(url)
-    #     return response.json()
+    def getAllItems(self):        
+        url = "https://localhost:7216/api/Data/GetAllItems"
+        response = requests.get(url , verify= False)
+        return response.json()
