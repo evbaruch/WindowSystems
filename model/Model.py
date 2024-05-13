@@ -40,7 +40,7 @@ class Model:
         url = "https://localhost:7216/api/Data/Delete"
         params = {"id_map": id_map}
         response = requests.get(url, params=params, verify=False)
-        return response.status_code == 200
+        return response.json().get("isDeleted")
 
     def getAllItems(self):        
         url = "https://localhost:7216/api/Data/GetAllItems"

@@ -20,7 +20,7 @@ class Presenter:
         # Connect view signals to presenter methods
         self.view.submit_button.clicked.connect(self.handle_submit) # the user clicks the submit button - a request is sent to the model to get the data
         self.view.send_button.clicked.connect(self.handle_send) # the user clicks the send button - a request is sent to the model to send the message
-        # self.view.delete_button.clicked.connect(self.handle_delete) # the user clicks the delete button - a request is sent to the model to delete the item
+        self.view.delete_button.clicked.connect(self.handle_delete) # the user clicks the delete button - a request is sent to the model to delete the item
         
     def show(self):
         self.get_all_items()
@@ -63,16 +63,15 @@ class Presenter:
         self.view.current_data.update(responde)  # Append the response to the data
         self.view.add_history(self.view.current_data) # Add the data to the history
         
-    # """
-    #     requests deletion of the item
-    # """    
-    # def handle_delete(self):
-    #     id_map = self.view.get_user_input() # TODO: get id_map from qtview
-    #     is_deleted = self.model.delete(id_map)
-    #     if is_deleted:
-    #         self.view.show_message("Item deleted successfully.")
-    #     else:
-    #         self.view.show_message("Item not found.")
+    """
+        requests deletion of the item
+    """    
+    def handle_delete(self):
+        id_map = self.view.id_for_oporations 
+        is_deleted = self.model.delete(id_map)
+        if is_deleted:
+            self.view.remove_history(id_map)
+        
     
     """
         requests all items

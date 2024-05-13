@@ -1,118 +1,13 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QDateEdit, QScrollArea ,QHBoxLayout,QMessageBox , QGridLayout ,QSlider, QMenu
-from PySide6.QtGui import QPixmap ,QIcon , QAction
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QScrollArea ,QHBoxLayout,QMessageBox , QGridLayout ,QSlider
+from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
-from PySide6.QtCore import QEvent
+from .ClickableWidget import ClickableWidget
 import json
 import requests
 
 from qt_material import apply_stylesheet
 from view.View import View
-
-
-class PopupWindow(QWidget):
-    def __init__(self, image, address , item):
-        super().__init__()
-
-        self.layout = QVBoxLayout(self)
-
-        # Display the image
-        self.image_label = QLabel(self)
-        self.image_label.setPixmap(image)
-        self.layout.addWidget(self.image_label)
-
-        # Display the address
-        self.address_label = QLabel(address, self)
-        self.layout.addWidget(self.address_label)
-
-        # Display the zoom
-        self.zoom_label = QLabel(f"Zoom: {item.get('zoom')}", self)
-        self.layout.addWidget(self.zoom_label)
-
-        # Display the latitude
-        self.lat_label = QLabel(f"Latitude: {item.get('lat')}", self)
-        self.layout.addWidget(self.lat_label)
-
-        # Display the longitude
-        self.lon_label = QLabel(f"Longitude: {item.get('lon')}", self)
-        self.layout.addWidget(self.lon_label)
-
-        # Display the weather
-        self.weather_label = QLabel(f"Weather: {item.get('visibility')}", self)
-        self.layout.addWidget(self.weather_label)
-
-        self.setWindowTitle("Widget Details")
-        self.resize(200, 200)
-
-class ClickableWidget(QWidget):
-    def __init__(self, image_path, address ,item):
-        super().__init__()
-        self.item_data = item
-        self.setAttribute(Qt.WA_Hover, True)
-        self.layout = QVBoxLayout(self)
-        pixmap = QPixmap()
-        self.image_label = QLabel(self)
-        pixmap.loadFromData(requests.get(image_path).content)
-        self.image_label.setPixmap(pixmap.scaled(143, 143, Qt.KeepAspectRatio))
-        self.image_label.setStyleSheet("""
-            border: 10px solid black;
-            border-radius: 20px;
-        """)  # Add a rounded border around the image
-        self.layout.addWidget(self.image_label)
-
-        self.address_label = QLabel(address, self)
-        self.layout.addWidget(self.address_label)
-
-        # Apply CSS styles for normal state
-        self.setStyleSheet("""
-            background-color: #262a2e;
-            color: white;
-        """)
-
-        # Install event filter
-        self.installEventFilter(self)
-
-    
-    def eventFilter(self, obj, event):
-        # Change the style when a hover event is detected
-        if event.type() == QEvent.HoverEnter:
-            self.setStyleSheet("""
-                background-color: #262a2e;
-            """)
-            self.address_label.setStyleSheet("""
-                color: #448aff;
-                text-decoration: underline;
-            """)
-        elif event.type() == QEvent.HoverLeave:
-            self.setStyleSheet("""
-                background-color: #262a2e;
-            """)
-            self.address_label.setStyleSheet("""
-                color: white;
-                text-decoration: none;
-            """)
-        return super().eventFilter(obj, event)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.popup = PopupWindow(self.image_label.pixmap(), self.address_label.text(),self.item_data)
-            self.popup.show()
-            self.setStyleSheet("""
-                background-color: gray;
-            """)
-        
-    def contextMenuEvent(self, event):
-        context_menu = QMenu(self)
-
-        delete_action = QAction("Delete", self)
-        delete_action.triggered.connect(self.delete)
-        context_menu.addAction(delete_action)
-
-        resend_action = QAction("Resend", self)
-        resend_action.triggered.connect(self.resend)
-        context_menu.addAction(resend_action)
-
-        context_menu.exec_(event.globalPos())
-        
+       
 class QtView(View):
     def __init__(self):
         super().__init__()
@@ -131,12 +26,15 @@ class QtView(View):
         self.window.setMinimumSize(self.window.size())
         self.window.setMaximumSize(self.window.size())
 
+        self.delete_button = QPushButton("Delete", self.window)
         # Add a flag to track whether the submit button has been clicked
         self.submit_clicked = False
         # Add a flag to track whether the address is valid
         self.address_validated = False
         # The data of the current request
         self.current_data = None
+        
+        self.id_for_oporations = -1
 
         # Initialize addresses as an empty JSON array
         self.history = json.loads('[]')  # Initialize as an empty JSON array
@@ -308,6 +206,20 @@ class QtView(View):
         msgBox = QMessageBox()
         msgBox.setText(message)
         msgBox.exec()
+        
+    def delete_clicked(self,id):
+        
+        self.id_for_oporations = id
+        # click menullay the delete button
+        self.delete_button.click()
+        
+    def resend_clicked(self,id):
+        self.id_for_oporations = id
+        # click menullay the resend button
+        self.send_button.click()
+        # move manually to the second tab
+        self.tab_widget.setCurrentIndex(1)
+        
 
     def tab_changed(self, index):
         if index == 2:  # If the current tab is the "History" tab
@@ -326,7 +238,7 @@ class QtView(View):
         self.history_list_widget = QGridLayout(self.scroll_widget)
 
         for i, item in enumerate(self.history):
-            widget = ClickableWidget(item.get("url"), item.get("location").get("address"),item)
+            widget = ClickableWidget(item.get("url"), item.get("location").get("address"),item ,self)
             row = i // 7  # change the number to set number of rows
             column = i % 5  # change the number to set number of columns
             self.history_list_widget.addWidget(widget, row, column)
@@ -337,13 +249,35 @@ class QtView(View):
         self.third_layout.addWidget(self.scroll_area)
         
     def add_history(self, item):
-        widget = ClickableWidget(item.get("url"), item.get("location").get("address"))
+        widget = ClickableWidget(item.get("url"), item.get("location").get("address"),item ,self)
         row = len(self.history) // 7 
         column = len(self.history) % 5 
         self.history_list_widget.addWidget(widget, row, column)
+        self.history.append(item)
         self.history_list_widget.setColumnStretch(column, 1)  
-        self.history_list_widget.setRowStretch(row, 1)  
+        self.history_list_widget.setRowStretch(row, 1) 
+         
+        self.scroll_area.setWidget(self.scroll_widget)
+        self.third_layout.addWidget(self.scroll_area)
         self.scroll_widget.adjustSize()  # Adjust the size of the widget
+    
+    def remove_history(self, id):
+        # Find the index of the item with the specified id
+        index = next((i for i, item in enumerate(self.history) if item.get('id') == id), None)
+        if index is None:
+            return  # Item not found
+
+        row = index // 7
+        column = index % 5
+
+        # Remove the item from the history
+        self.history.pop(index)
+
+        # Remove the item from the view
+        self.history_list_widget.itemAtPosition(row, column).widget().deleteLater()
+        self.history_list_widget.setColumnStretch(column, 1)  
+        self.history_list_widget.setRowStretch(row, 1) 
+        self.scroll_widget.adjustSize()
         
     def startView(self):
         self.history_init()
