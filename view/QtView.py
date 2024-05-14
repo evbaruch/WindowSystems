@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QScrollArea ,QHBoxLayout,QMessageBox , QGridLayout ,QSlider
-from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QLineEdit, QSplitter, QTabWidget, QFormLayout, QScrollArea ,QHBoxLayout,QMessageBox , QGridLayout ,QSlider 
+from PySide6.QtGui import QPixmap,QIcon
 from PySide6.QtCore import Qt
 from .ClickableWidget import ClickableWidget
 import json
@@ -19,8 +19,11 @@ class QtView(View):
         self.window = QMainWindow()
 
         # set the window title
-        self.window.setWindowTitle("Qt View")
+        self.window.setWindowTitle("Plan Command Center")
 
+        # set an icon for the window
+        self.window.setWindowIcon(QIcon("view/Skull-Icon.svg.png"))
+        
         # set window size
         self.window.resize(1000, 600)
         self.window.setMinimumSize(self.window.size())
@@ -241,6 +244,7 @@ class QtView(View):
             widget = ClickableWidget(item.get("url"), item.get("location").get("address"),item ,self)
             row = i // 7  # change the number to set number of rows
             column = i % 5  # change the number to set number of columns
+            
             self.history_list_widget.addWidget(widget, row, column)
             self.history_list_widget.setColumnStretch(column, 1)  # 
             self.history_list_widget.setRowStretch(row, 1)  # 
@@ -252,11 +256,12 @@ class QtView(View):
         widget = ClickableWidget(item.get("url"), item.get("location").get("address"),item ,self)
         row = len(self.history) // 7 
         column = len(self.history) % 5 
+        
         self.history_list_widget.addWidget(widget, row, column)
-        self.history.append(item)
         self.history_list_widget.setColumnStretch(column, 1)  
         self.history_list_widget.setRowStretch(row, 1) 
-         
+        self.history.append(item)
+        
         self.scroll_area.setWidget(self.scroll_widget)
         self.third_layout.addWidget(self.scroll_area)
         self.scroll_widget.adjustSize()  # Adjust the size of the widget
@@ -274,7 +279,8 @@ class QtView(View):
         self.history.pop(index)
 
         # Remove the item from the view
-        self.history_list_widget.itemAtPosition(row, column).widget().deleteLater()
+        widget = self.history_list_widget.itemAtPosition(row, column).widget()
+        widget.deleteLater()
         self.history_list_widget.setColumnStretch(column, 1)  
         self.history_list_widget.setRowStretch(row, 1) 
         self.scroll_widget.adjustSize()

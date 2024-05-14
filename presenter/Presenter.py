@@ -60,9 +60,17 @@ class Presenter:
         id = self.view.current_data.get("id")
         responde = self.model.getResponse(id , prompt)
         self.view.display_label.setText(responde.get("responde"))
-        self.view.current_data.update(responde)  # Append the response to the data
-        self.view.add_history(self.view.current_data) # Add the data to the history
-        
+
+        # Create a new dictionary for 'chatGpt' if it doesn't exist
+        if not self.view.current_data.get('chatGpt'):
+            self.view.current_data['chatGpt'] = {}
+
+        # Add 'prompt' and 'responde' to 'chatGpt'
+        self.view.current_data['chatGpt']['prompt'] = responde.get("prompt")
+        self.view.current_data['chatGpt']['responde'] = responde.get("responde")
+
+        self.view.add_history(self.view.current_data) # Add the updated data to history
+            
     """
         requests deletion of the item
     """    
